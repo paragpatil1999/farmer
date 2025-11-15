@@ -32,6 +32,14 @@ The Virtual Machine Scale Set builder (`vmss`) creates a virtual machine scale s
 | vmss                       | osupgrade_automatic_rollback          | Whether OS image rollback feature should be enabled. Enabled by default. |
 | vmss                       | osupgrade_rolling_upgrade             | Indicates whether rolling upgrade policy should be used during Auto OS Upgrade. Default value is false. Auto OS Upgrade will fallback to the default policy if no policy is defined on the VMSS. |
 | vmss                       | osupgrade_rolling_upgrade_deferral    | Indicates whether Auto OS Upgrade should undergo deferral. Deferred OS upgrades will send advanced notifications on a per-VM basis that an OS upgrade from rolling upgrades is incoming, via the IMDS tag 'Platform.PendingOSUpgrade'. The upgrade then defers until the upgrade is approved via an ApproveRollingUpgrade call. |
+| vmss                       | rolling_upgrade_enable_cross_zone_upgrade | Allow VMSS to ignore Availability Zone boundaries when constructing upgrade batches. Allows Azure to spread out batches across different zones. |
+| vmss                       | rolling_upgrade_max_batch_instance_percent | The maximum percentage of total virtual machine instances that will be upgraded simultaneously by the rolling upgrade in one batch. Should be between 5 and 100. |
+| vmss                       | rolling_upgrade_max_surge              | Create new instances temporarily to replace old ones during upgrade. Helps maximize availability during rolling upgrades. |
+| vmss                       | rolling_upgrade_max_unhealthy_instance_percent | The maximum percentage of the total virtual machine instances in the scale set that can be simultaneously unhealthy before the rolling upgrade aborts. |
+| vmss                       | rolling_upgrade_max_unhealthy_upgraded_instance_percent | The maximum percentage of upgraded virtual machine instances that can be found to be in an unhealthy state. |
+| vmss                       | rolling_upgrade_pause_time_between_batches | The wait time between completing the update for all virtual machines in one batch and starting the next batch. The time duration should be specified in ISO 8601 format (e.g. PT5M for 5 minutes). |
+| vmss                       | rolling_upgrade_prioritize_unhealthy_instances | Upgrade all unhealthy instances in a scale set before any healthy instances. |
+| vmss                       | rolling_upgrade_rollback_failed_instances_on_policy_breach | Rollback failed instances to previous model if the Rolling Upgrade policy is violated. |
 | applicationHealthExtension | vmss                                  | When adding the extension as a resource, this specifies the VM scale set it should be applied to.                                                                                                         |
 | applicationHealthExtension | os                                    | Operating system (Linux or Windows) to install the correct extension for that OS.                                                                                                                         |
 | applicationHealthExtension | protocol                              | Protocol (TCP, HTTP, or HTTPS) to probe, and if specifying HTTP or HTTPS, include the path.                                                                                                               |
@@ -42,7 +50,9 @@ The Virtual Machine Scale Set builder (`vmss`) creates a virtual machine scale s
 | applicationHealthExtension | type_handler_version                  | Extension version (default: "1.0")         |
 
 
-#### Example
+#### Examples
+
+##### Basic Scale Set with Rolling Updates
 
 This example creates a scale set with 3 VM instances and includes the Application Health Extension to support rolling updates and automatic repairs.
 
@@ -77,5 +87,49 @@ vmss {
         }
     ]
 
+}
+```
+
+##### Scale Set with Rolling Upgrade Policy
+
+This example shows how to configure the rolling upgrade policy to control how upgrades are performed across the scale set instances.
+
+```fsharp
+open Farmer
+open Farmer.Builders
+open Farmer.Vm
+open Farmer.VmScaleSet
+
+vmss {
+    name "my-scale-set"
+    capacity 10
+
+    vm_profile (
+        vm {
+            username "azureuser"
+            operating_system UbuntuServer_2204LTS
+            vm_size Standard_B2s
+            os_disk 128 StandardSSD_LRS
+        }
+    )
+
+    upgrade_mode Rolling
+
+    // Configure rolling upgrade policy
+    rolling_upgrade_enable_cross_zone_upgrade true
+    rolling_upgrade_max_batch_instance_percent 20
+    rolling_upgrade_max_surge true
+    rolling_upgrade_max_unhealthy_instance_percent 20
+    rolling_upgrade_max_unhealthy_upgraded_instance_percent 20
+    rolling_upgrade_pause_time_between_batches (System.TimeSpan.FromMinutes 5)
+    rolling_upgrade_prioritize_unhealthy_instances true
+
+    add_extensions [
+        applicationHealthExtension {
+            protocol (ApplicationHealthExtensionProtocol.HTTP "/health")
+            port 80
+            os Linux
+        }
+    ]
 }
 ```
