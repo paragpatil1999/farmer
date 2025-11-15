@@ -1,6 +1,17 @@
 Release Notes
 =============
 
+## 1.9.26
+* Virtual Machine Scale Sets: Add support for rolling upgrade policy configuration with 8 new optional fields:
+  * `rolling_upgrade_enable_cross_zone_upgrade` - Allow VMSS to ignore Availability Zone boundaries when constructing upgrade batches
+  * `rolling_upgrade_max_batch_instance_percent` - Maximum percentage of instances upgraded simultaneously in one batch
+  * `rolling_upgrade_max_surge` - Create new instances temporarily during upgrade for higher availability
+  * `rolling_upgrade_max_unhealthy_instance_percent` - Maximum percentage of unhealthy instances before aborting upgrade
+  * `rolling_upgrade_max_unhealthy_upgraded_instance_percent` - Maximum percentage of unhealthy upgraded instances
+  * `rolling_upgrade_pause_time_between_batches` - Wait time between upgrade batches (ISO 8601 duration)
+  * `rolling_upgrade_prioritize_unhealthy_instances` - Upgrade unhealthy instances before healthy ones
+  * `rolling_upgrade_rollback_failed_instances_on_policy_breach` - Rollback on policy violation
+
 ## 1.9.25
 * Service Bus: Support for minimum TLS version of 1.3.
 * Storage Accounts: Support for requesting minimum TLS version of 1.3. The ARM resource itself currently falls back to 1.2.
